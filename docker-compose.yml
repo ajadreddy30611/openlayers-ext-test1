@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  geoserver:
+    # build:
+    #   context: ./c/ProgramData
+    #   dockerfile: Dockerfile
+    image: ajadreddy/custom-geoserver-test01:latest
+    container_name: geoserver-container
+    ports:
+      - "8080:8080"
+    # volumes:
+    #   - ./c/ProgramData/GeoServer:/usr/local/geoserver
+    environment:
+      - GEOSERVER_HOME=/usr/local/geoserver
+      - GEOSERVER_DATA_DIR=/usr/local/geoserver
+    # restart: always
+
+  webapp:
+    build:
+      context: .
+      # dockerfile: Dockerfile.webapp
+    image: ajadreddy/webapp-test01:latest
+    container_name: webapp-container
+    ports:
+      - "3000:3000"
+    depends_on:
+      - geoserver
