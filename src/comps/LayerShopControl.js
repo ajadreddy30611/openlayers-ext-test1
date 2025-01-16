@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import 'ol/ol.css';
 import 'ol-ext/dist/ol-ext.css';
 import 'ol-ext/control/LayerShop.css';
@@ -15,6 +15,9 @@ import ImageLayer from 'ol/layer/Image';
 
 const LayerShopControl = () => {
   const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const swipeRef = useRef(null);
+  const [swipeEnabled, setSwipeEnabled] = useState(false);
 
   useEffect(() => {
     const baseLayer = new TileLayer({
@@ -29,7 +32,6 @@ const LayerShopControl = () => {
       source: new XYZ({
         url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
       }),
-      background: 'white',
     });
 
     const layer1 = new TileLayer({
@@ -51,11 +53,12 @@ const LayerShopControl = () => {
         serverType: 'geoserver',
       }),
     });
+
     const shp1 = new ImageLayer({
       title: 'Shapefile 1',
       source: new ImageWMS({
         url: 'http://localhost:8080/geoserver/Tiff_Layers/wms',
-        params: { 'LAYERS': 'Tiff_Layers:tif_Karachi CD 1_shp_08_06-12_59_47'},
+        params: { 'LAYERS': 'Tiff_Layers:tif_Karachi CD 1_shp_08_06-12_59_47' },
         ratio: 1,
         serverType: 'geoserver',
       }),
@@ -71,7 +74,7 @@ const LayerShopControl = () => {
         }),
         new LayerGroup({
           title: 'Overlay Layers',
-          layers: [layer2, layer1,shp1],
+          layers: [layer2, layer1, shp1],
         }),
       ],
       view: new View({
@@ -79,6 +82,9 @@ const LayerShopControl = () => {
         zoom: 2,
       }),
     });
+
+    // Store the map instance
+    mapInstance.current = map;
 
     // Initialize the LayerShop control
     const layerShop = new LayerShop({
@@ -90,13 +96,12 @@ const LayerShopControl = () => {
     // Add the control to the map
     map.addControl(layerShop);
 
-    // Add Swipe interaction
+    // Initialize Swipe interaction
     const swipe = new Swipe({
-      layers: [layer1], // Specify layers for swipe
-      rightLayer: layer2, // Set the layer to display on the right
+      layers: [layer1],
+      rightLayer: layer2,
     });
-    swipe.setMap(map);
-    // map.addInteraction(swipe);
+    swipeRef.current = swipe;
 
     return () => {
       swipe.setMap(null);
@@ -104,8 +109,37 @@ const LayerShopControl = () => {
     };
   }, []);
 
+  const toggleSwipe = () => {
+    if (swipeEnabled) {
+      swipeRef.current.setMap(null); // Disable swipe
+    } else {
+      swipeRef.current.setMap(mapInstance.current); // Enable swipe
+    }
+    setSwipeEnabled(!swipeEnabled);
+  };
+
   return (
-    <div ref={mapRef} className="map" style={{ width: '100%', height: '100vh' }} />
+    <>
+      <div ref={mapRef} className="map" style={{ width: '100%', height: '100vh' }} />
+      <button
+        onClick={toggleSwipe}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          zIndex: 1000,
+          padding: '4px 13px',
+          background: swipeEnabled ? 'black' : 'white',
+          color: swipeEnabled ? 'white' : 'black',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+        }}
+      >
+        {/* {swipeEnabled ? 'disable Swipe' : 'Swipe'} */}
+        Swipe
+      </button>
+    </>
   );
 };
 
