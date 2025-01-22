@@ -18,6 +18,15 @@ const LayerShopControl = () => {
   const mapInstance = useRef(null);
   const swipeRef = useRef(null);
   const [swipeEnabled, setSwipeEnabled] = useState(false);
+  const [layersVisibility, setLayersVisibility] = useState({
+    'Layer 1': true,
+    'Layer 2': true,
+    'Shapefile 1': true,
+  });
+  const [baseLayersVisibility, setBaseLayersVisibility] = useState({
+    'OSM': true,
+    'Satellite': true,
+  });
 
   useEffect(() => {
     const baseLayer = new TileLayer({
@@ -67,16 +76,7 @@ const LayerShopControl = () => {
     // Initialize the map
     const map = new Map({
       target: mapRef.current,
-      layers: [
-        new LayerGroup({
-          title: 'Base Maps',
-          layers: [baseLayer, satelliteLayer],
-        }),
-        new LayerGroup({
-          title: 'Overlay Layers',
-          layers: [layer2, layer1, shp1],
-        }),
-      ],
+      layers: [baseLayer, satelliteLayer, layer2, layer1, shp1],
       view: new View({
         center: [0, 0],
         zoom: 2,
@@ -85,16 +85,6 @@ const LayerShopControl = () => {
 
     // Store the map instance
     mapInstance.current = map;
-
-    // Initialize the LayerShop control
-    const layerShop = new LayerShop({
-      openOnClick: true, // Click to open the shop
-      displayInLayerSwitcher: true, // Display layers in the layer switcher
-      extent: true, // Allow users to fit to layer extent
-    });
-
-    // Add the control to the map
-    map.addControl(layerShop);
 
     // Initialize Swipe interaction
     const swipe = new Swipe({
@@ -108,6 +98,30 @@ const LayerShopControl = () => {
       map.setTarget(null); // Cleanup the map on unmount
     };
   }, []);
+
+  // Toggle layer visibility
+  const handleLayerToggle = (layerName) => {
+    setLayersVisibility((prevState) => {
+      const newVisibility = { ...prevState, [layerName]: !prevState[layerName] };
+      const layer = mapInstance.current.getLayers().getArray().find(layer => layer.get('title') === layerName);
+      if (layer) {
+        layer.setVisible(newVisibility[layerName]);
+      }
+      return newVisibility;
+    });
+  };
+
+  // Toggle base layer visibility
+  const handleBaseLayerToggle = (baseLayerName) => {
+    setBaseLayersVisibility((prevState) => {
+      const newVisibility = { ...prevState, [baseLayerName]: !prevState[baseLayerName] };
+      const baseLayer = mapInstance.current.getLayers().getArray().find(layer => layer.get('title') === baseLayerName);
+      if (baseLayer) {
+        baseLayer.setVisible(newVisibility[baseLayerName]);
+      }
+      return newVisibility;
+    });
+  };
 
   const toggleSwipe = () => {
     if (swipeEnabled) {
@@ -136,9 +150,51 @@ const LayerShopControl = () => {
           cursor: 'pointer',
         }}
       >
-        {/* {swipeEnabled ? 'disable Swipe' : 'Swipe'} */}
         Swipe
       </button>
+      <div style={{
+        position: 'absolute',
+        top: '60px',
+        right: '10px',
+        zIndex: 1000,
+        padding: '4px 13px',
+        background: 'white',
+        color: 'black',
+        border: 'none',
+        borderRadius: '5px',
+        height: "300px",
+        width: "300px",
+        opacity: "0.7",
+        overflowY: "auto",  // Allows scrolling if the content exceeds the div height
+      }}>
+        <h4>Layer Visibility</h4>
+        {Object.keys(layersVisibility).map((layerName) => (
+          <div key={layerName} style={{ marginBottom: '10px' }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={layersVisibility[layerName]}
+                onChange={() => handleLayerToggle(layerName)}
+              />
+              {layerName}
+            </label>
+          </div>
+        ))}
+
+        <h4>Base Layers</h4>
+        {Object.keys(baseLayersVisibility).map((baseLayerName) => (
+          <div key={baseLayerName} style={{ marginBottom: '10px' }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={baseLayersVisibility[baseLayerName]}
+                onChange={() => handleBaseLayerToggle(baseLayerName)}
+              />
+              {baseLayerName}
+            </label>
+          </div>
+        ))}
+      </div>
     </>
   );
 };
